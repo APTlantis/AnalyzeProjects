@@ -75,7 +75,7 @@ def write_summary(projects, avg, by_status, tags):
     for t, n in sorted(tags.items(), key=lambda x: -x[1])[:30]:
         lines.append(f"- {t}: {n}")
     SUMMARY_PATH.write_text("\n".join(lines), encoding="utf-8")
-    print(f"📘 Wrote {SUMMARY_PATH}")
+    print(f"Wrote {SUMMARY_PATH}")
 
 
 def main():
@@ -101,10 +101,10 @@ def main():
 
     with open(INDEX_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"✅ Wrote {INDEX_PATH}")
+    print(f"Wrote {INDEX_PATH}")
 
     write_summary(projects, avg, by_status, tags)
-    print("✨ Portfolio analysis complete.")
+    print("Portfolio analysis complete.")
 
 
 if __name__ == "__main__":

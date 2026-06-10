@@ -16,6 +16,7 @@ Enhanced with:
 """
 
 import json
+import hashlib
 import logging
 import os
 import pathlib
@@ -79,8 +80,10 @@ def should_skip_directory(dir_name: str, excluded_dirs: List[str]) -> bool:
 
 def make_output_stem(project_name: str, project_path: pathlib.Path, manifest_path: pathlib.Path | None = None) -> str:
     """Build a stable, filesystem-safe output filename stem."""
-    manifest_part = f"__{manifest_path.name}" if manifest_path else ""
-    raw = f"{project_name}__{project_path}{manifest_part}"
+    identity_path = manifest_path or project_path
+    digest = hashlib.sha1(str(identity_path.resolve()).encode("utf-8")).hexdigest()[:12]
+    manifest_stem = manifest_path.name if manifest_path else project_path.name
+    raw = f"{project_name}__{manifest_stem}__{digest}"
     stem = re.sub(r"[^A-Za-z0-9._-]+", "_", raw).strip("._-")
     return stem or "project"
 
@@ -374,6 +377,7 @@ def process_project(project, config, skip_existing: bool = True):
     project_path = target.project_path
     manifest_path = target.manifest_path
     out_dir = pathlib.Path(config["project"]["out_dir"])
+    out_dir.mkdir(parents=True, exist_ok=True)
     output_stem = make_output_stem(name, project_path, manifest_path)
     json_path = out_dir / f"{output_stem}.json"
 
