@@ -1,0 +1,75 @@
+{
+  "project": {
+    "id": "",
+    "title": "",
+    "description": "",
+    "version": "",
+    "stage": "",
+    "tags": []
+  },
+  "metadata": {
+    "created": "",
+    "last_updated": "",
+    "completed": "",
+    "maintainer": "",
+    "license": "",
+    "language_primary": "",
+    "languages_used": [],
+    "dependencies": {
+      "go": [],
+      "rust": [],
+      "python": []
+    },
+    "containerization": {
+      "docker_compose": false,
+      "orchestration": "",
+      "services": []
+    }
+  },
+  "links": {
+    "drive": "",
+    "github": "",
+    "canva": "",
+    "chatgpt_project": "",
+    "codex_local": "",
+    "aptlantis_dashboard": ""
+  },
+  "structure": {
+    "docs": "/docs/",
+    "src_go": "/src/go/",
+    "src_rust": "/src/rust/",
+    "datasets": "/datasets/",
+    "configs": "/configs/",
+    "logs": "/logs/",
+    "containers": "/compose/",
+    "archive": "/archive/"
+  },
+  "scripts": [
+    {
+      "name": "",
+      "language": "",
+      "role": "",
+      "status": "",
+      "version": 1
+    }
+  ],
+  "datasets": [
+    {
+      "name": "",
+      "description": "",
+      "size": "",
+      "format": ""
+    }
+  ],
+  "automation": {
+    "dispatcher": "",
+    "cron_schedule": "",
+    "healthcheck": "",
+    "logs_rotation": "",
+    "monitoring": ""
+  },
+  "notes": {
+    "recent_updates": [],
+    "next_steps": []
+  }
+}

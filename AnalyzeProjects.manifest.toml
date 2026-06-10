@@ -1,0 +1,82 @@
+title = "APTlantis Project Manifest v2.3"
+
+[project]
+id = "analyze-projects"
+title = "AnalyzeProjects"
+description = "Best-effort first-pass manifest for AnalyzeProjects."
+type = "tool"
+stage = "concept"
+version = "0.1.0"
+tags = ["tool", "library", "needs-review"]
+
+[metadata]
+created = "2026-06-02"
+last_updated = "2026-06-02"
+maintainer = "Herb"
+license = "Unspecified"
+language_primary = "Python"
+languages_used = ["Python"]
+
+[state]
+completion_percent = 0
+stability = "experimental"
+active_development = true
+technical_debt = "moderate"
+maintenance_burden = "medium"
+known_gaps = []
+
+[runtime]
+platform = "library"
+environment = "Python project environment"
+
+[relationships]
+depends_on_projects = []
+used_by_projects = []
+external_dependencies = []
+related_projects = []
+
+[artifacts]
+produces = []
+consumes = []
+
+[generation]
+manifest_is_canonical = true
+generates_readme = false
+generates_writerside = false
+generates_jsonld = false
+generates_visualizations = false
+generates_embeddings = false
+generator = "aptlantis-project-manifests"
+
+[documentation]
+readme = "README.md"
+generated_sections = false
+
+[semantic]
+domain = "tool"
+primary_concepts = []
+related_domains = []
+cognitive_tags = ["tool", "library", "needs-review"]
+complexity = "medium"
+
+[visual]
+theme = "NeonInk-v0.1.1"
+primary_color = "#0ff0ff"
+semantic_role = "tool"
+contains_svg_assets = false
+contains_scene_art = false
+
+[distribution]
+packaged = false
+package_formats = []
+portable = true
+offline_capable = true
+requires_installation = false
+
+[structure]
+repo_path = "E:/AnalyzeProjects"
+
+[notes]
+needs_review = "Generated best-effort manifest. Verify inferred fields before treating optional metadata as authoritative."
+evidence = "Local project files and directory structure"
+
