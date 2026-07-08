@@ -1,82 +1,94 @@
-title = "APTlantis Project Manifest v2.3"
+[manifest]
+schema = "APTlantis Entity Manifest"
+schema_version = "2.4"
+manifest_type = "project"
+canonical_name = "AnalyzeProjects.manifest.toml"
+last_updated = "2026-07-08"
+maintainer = "Herb"
+
+[entity]
+id = "analyzeprojects"
+title = "AnalyzeProjects"
+kind = "project"
+class = "project"
+status = "active"
+description = "Project-analysis tooling with a generated or interactive dashboard surface."
+tags = []
 
 [project]
-id = "analyze-projects"
-title = "AnalyzeProjects"
-description = "Best-effort first-pass manifest for AnalyzeProjects."
-type = "tool"
-stage = "concept"
+type = "command-tool"
+portfolio_class = "project"
+stage = "active"
 version = "0.1.0"
-tags = ["tool", "library", "needs-review"]
 
-[metadata]
-created = "2026-06-02"
-last_updated = "2026-06-02"
+[governance]
+primary_standard = "CTS"
+primary_standard_path = "D:\\.library\\aptlantis_core\\CTS\\README.md"
+additional_standards = [
+    "WGS",
+    "PPS",
+]
+additional_standard_paths = [
+    "D:\\.library\\aptlantis_core\\WGS\\README.md",
+    "D:\\.library\\aptlantis_core\\PPS\\README.md",
+]
+inherits_from = "..\\CTS.manifest.toml"
+
+[lifecycle]
+state = "active"
+last_reviewed = "2026-07-08"
 maintainer = "Herb"
-license = "Unspecified"
-language_primary = "Python"
-languages_used = ["Python"]
 
-[state]
-completion_percent = 0
-stability = "experimental"
-active_development = true
-technical_debt = "moderate"
-maintenance_burden = "medium"
-known_gaps = []
-
-[runtime]
-platform = "library"
-environment = "Python project environment"
-
-[relationships]
-depends_on_projects = []
-used_by_projects = []
-external_dependencies = []
-related_projects = []
-
-[artifacts]
-produces = []
-consumes = []
-
-[generation]
-manifest_is_canonical = true
-generates_readme = false
-generates_writerside = false
-generates_jsonld = false
-generates_visualizations = false
-generates_embeddings = false
-generator = "aptlantis-project-manifests"
+[paths]
+root = "D:\\CTS\\AnalyzeProjects"
 
 [documentation]
+project_readme = "Project-README.md"
 readme = "README.md"
-generated_sections = false
 
-[semantic]
-domain = "tool"
-primary_concepts = []
-related_domains = []
-cognitive_tags = ["tool", "library", "needs-review"]
-complexity = "medium"
+[relationships]
+parent = "D:\\CTS"
+child_projects = []
 
-[visual]
-theme = "NeonInk-v0.1.1"
-primary_color = "#0ff0ff"
-semantic_role = "tool"
-contains_svg_assets = false
-contains_scene_art = false
+[state]
+stability = "experimental"
+active_development = true
+known_gaps = [
+    "Current build, test, artifact, and release posture were not executed during the governance migration.",
+]
 
-[distribution]
-packaged = false
-package_formats = []
-portable = true
-offline_capable = true
-requires_installation = false
+[migration]
+archived_manifests = [
+    "D:\\.city_hall\\WGS\\migration-notes\\Legacy-Live-Manifests-20260708\\CTS\\AnalyzeProjects\\AnalyzeProjects.manifest.toml",
+]
+
+[agent]
+read_first = [
+    "AGENTS.md",
+    "AnalyzeProjects.manifest.toml",
+    "Project-README.md",
+]
+authoritative_docs = [
+    "AnalyzeProjects.manifest.toml",
+    "Project-README.md",
+    "AGENTS.md",
+]
+safe_to_modify = true
+notes = "Existing code and artifacts outrank inferred placeholder state; verify before updating lifecycle claims."
 
 [structure]
-repo_path = "E:/AnalyzeProjects"
+required_files = []
+required_child_project_files = [
+    "AGENTS.md",
+    "[EntityName].manifest.toml",
+    "Project-README.md",
+]
 
-[notes]
-needs_review = "Generated best-effort manifest. Verify inferred fields before treating optional metadata as authoritative."
-evidence = "Local project files and directory structure"
-
+[verification]
+level = "metadata-reconciled"
+evidence = "README.md and implementation"
+reviewed = "2026-07-08"
+build_verified = false
+tests_verified = false
+artifact_verified = false
+release_verified = false

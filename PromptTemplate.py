@@ -24,6 +24,7 @@ PROJECT_TEMPLATE = {
     "next_steps": [],
     "potential_improvements": [],
     "documentation_outputs": [],
+    "creative_enhancements": [],
     "tags": [],
     "confidence": "",  # Low, Medium, High
     "notes": []
@@ -81,6 +82,9 @@ def build_project_prompt(name, text):
         "NEXT STEPS RULE:\n"
         "Next steps should be practical continuation steps for this specific project in the Aptlantis ecosystem. "
         "Prefer actions that improve continuity, generation, manifest accuracy, operational reliability, or integration with related Aptlantis tools.\n\n"
+
+        "CREATIVE ENHANCEMENTS RULE:\n"
+        "Generate a handful of creative enhancements for this project. Think outside the box and propose innovative features, new use cases, unique integrations, or novel architectural directions that would elevate the project. Do not just list standard fixes or improvements.\n\n"
 
         "TAG RULES:\n"
         "Normalize tags to lowercase slug form where possible. Examples: 'Local-First' -> 'local-first', 'CLI' -> 'cli', "
