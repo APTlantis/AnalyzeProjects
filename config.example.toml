@@ -1,0 +1,27 @@
+[project]
+index_path = "D:/CTS/AnalyzeProjects/ProjectIndex.md"
+out_dir = "D:/CTS/AnalyzeProjects/Dashboard/Project-Summaries/raw"
+summary_path = "D:/CTS/AnalyzeProjects/Dashboard/Project-Summaries/summary.md"
+
+[model]
+name = "gpt-5-mini-2025-08-07"
+api_host = "https://api.openai.com"
+prefer = "openai"
+
+[standards]
+DRS = "D:/.library/aptlantis_core/DRS/Desktop Application Release Standard.md"
+CTS = "D:/.library/aptlantis_core/CTS/Command Tool Standard.md"
+WDS = "D:/.library/aptlantis_core/WDS/Website Development Standard.md"
+
+[processing]
+max_chars_per_file = 2500
+max_total_chars = 90000
+max_files_per_project = 60
+delay = 0.3
+max_retries = 3
+skip_already_processed = true
+max_workers = 3
+
+[filtering]
+allowed_exts = [".py", ".md", ".txt", ".todo", ".ps1", ".sh", ".go", ".bat", ".js", ".json", ".toml", ".yaml", ".yml", ".html", ".css", ".java", ".c", ".cpp", ".cs", ".rb", ".rs", ".csv", ".xml"]
+excluded_dirs = [".git", "node_modules", "venv", ".venv", "__pycache__", ".idea", ".vs", ".claude", "dist", "build", ".next", ".nuxt", ".svelte-kit", ".cache", "coverage", "target", "bin", "obj", "project_images", "lookup", "tests", "scripts", ".pytest_cache", "Testdata", "winapp", "in", "raw", ".sonarlint", "$RECYCLE.BIN", "System Volume Information", "Program Files", "Program Files (x86)", "Windows", "Users", "AppData", "Local", "Roaming", "PythonDocs"]

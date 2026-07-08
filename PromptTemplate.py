@@ -30,14 +30,35 @@ PROJECT_TEMPLATE = {
     "notes": []
 }
 
-def build_project_prompt(name, text):
+def build_project_prompt(name, text, project_group="", governing_standard="", governing_standard_path=""):
+    if project_group == "STANDARDS":
+        governance_context = (
+            "EVALUATION MODE: GOVERNANCE STANDARD\n"
+            "Evaluate this standard for internal clarity, completeness, consistency, implementability, "
+            "scope boundaries, terminology, required evidence, and actionable verification rules. "
+            "Do not apply DRS, CTS, or WDS application-release requirements unless this standard explicitly incorporates them.\n\n"
+        )
+    else:
+        governance_context = (
+            f"GOVERNING STANDARD: {project_group}\n"
+            f"Canonical standard path: {governing_standard_path}\n"
+            "Use the standard below as evaluation criteria for the project's intended end state. "
+            "It is governance context, not evidence that the project currently implements a requirement. "
+            "Only report a requirement as missing when it applies to this project's stated lifecycle and scope.\n\n"
+            "<governing-standard>\n"
+            f"{governing_standard}\n"
+            "</governing-standard>\n\n"
+        )
+
     return (
         "You are a structured project assessment assistant evaluating the Aptlantis project ecosystem. "
         "Aptlantis is a local-first, operator-centric, archive-oriented development ecosystem made of internal tools, "
         "pipelines, generators, dashboards, dataset systems, desktop utilities, semantic metadata systems, and infrastructure components. "
         "These projects are primarily built for a single operator, not for public product release, funding review, team onboarding, or SaaS distribution.\n\n"
 
-        "SOURCE PRIORITY:\n"
+        + governance_context
+
+        + "SOURCE PRIORITY:\n"
         "1. The <project-name>.manifest.toml is the canonical source of truth for project identity, lifecycle, relationships, state, capabilities, and generation behavior.\n"
         "2. README.md is a generated or semi-generated human-readable view derived from the manifest.\n"
         "3. schema.jsonld, Mermaid diagrams, Writerside docs, and other markdown files are supporting views or visualization inputs.\n"
@@ -56,8 +77,9 @@ def build_project_prompt(name, text):
         "EVALUATION RULES:\n"
         "- Evaluate completion relative to the intended scope in the manifest, not generic software-industry expectations.\n"
         "- Do not treat generated docs as stale just because they are concise.\n"
-        "- Do not report 'truncated source' unless the provided content explicitly proves a file is incomplete. "
-        "If a snippet appears cut off because of context limits, record uncertainty in notes instead of listing it as a missing piece.\n"
+        "- Every file block marked 'sampled excerpt' was deliberately shortened while transferring context; this does not mean the repository file is truncated.\n"
+        "- Never report truncated, cut-off, or incomplete source based on an excerpt boundary, missing continuation, context limit, or transfer artifact.\n"
+        "- Report actual repository truncation only when project content explicitly documents the defect independently of the excerpt. Otherwise record uncertainty in notes, never as a missing piece, next step, or improvement.\n"
         "- Do not list UI work as missing unless the project is a UI/dashboard/app and the intended UI feature is explicitly referenced.\n"
         "- Do not list packaging or public release work unless distribution is explicitly part of the project scope.\n"
         "- Do not list tests or CI/CD as missing by default. Mention them only as optional improvements if relevant.\n"
@@ -100,5 +122,7 @@ def build_project_prompt(name, text):
 
         "Output schema:\n"
         + json.dumps(PROJECT_TEMPLATE, indent=2)
-        + f"\n\nProject: {name}\n\nContent:\n{text}"
+        + f"\n\nProject: {name}\nProject group: {project_group}\n\n"
+        "The following file blocks are transferred evaluation evidence. Labels state whether each block is complete or a sampled excerpt.\n\n"
+        f"Content:\n{text}"
     )

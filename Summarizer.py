@@ -25,7 +25,7 @@ import time
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from ModelClient import ask_model_json
 from PromptTemplate import build_project_prompt, PROJECT_TEMPLATE
@@ -48,14 +48,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 CONFIG: Dict = {}
+GOVERNING_STANDARDS: Dict[str, str] = {}
+
+EXPECTED_GROUP_COUNTS = {
+    "DRS": 12,
+    "CTS": 6,
+    "WDS": 4,
+    "STANDARDS": 8,
+}
 
 
 @dataclass(frozen=True)
 class ProjectTarget:
-    """A project identified by its canonical manifest and scanned from its folder."""
+    """A project explicitly listed in ProjectIndex.md."""
     project_name: str
     project_path: pathlib.Path
-    manifest_path: pathlib.Path
+    project_group: str
+    manifest_path: Optional[pathlib.Path] = None
+    repository_url: str = ""
+    governing_standard_path: Optional[pathlib.Path] = None
 
 
 def load_config(config_path: str = "config.toml") -> Dict:
@@ -130,77 +141,111 @@ def manifest_project_name(manifest_path: pathlib.Path) -> str:
     return manifest_path.stem
 
 
-def discover_projects(config: Dict) -> List[ProjectTarget]:
-    """Discover project targets by finding canonical project manifests under configured roots."""
-    project_cfg = config["project"]
-    filtering_cfg = config["filtering"]
+def select_canonical_manifest(project_path: pathlib.Path) -> Optional[pathlib.Path]:
+    """Prefer <folder>.manifest.toml, otherwise use one unambiguous direct manifest."""
+    preferred = project_path / f"{project_path.name}.manifest.toml"
+    if preferred.is_file():
+        return preferred.resolve()
 
-    root_paths = [project_cfg["root"]] if project_cfg.get("root") else []
-    root_paths.extend(project_cfg.get("roots", []))
-
-    standalone_paths = [pathlib.Path(p).resolve() for p in project_cfg.get("standalone_projects", [])]
-    excluded_dirs = filtering_cfg["excluded_dirs"]
-
-    discovered: List[ProjectTarget] = []
-    seen_manifests = set()
-
-    def _add_manifest(path: pathlib.Path):
-        manifest_path = path.resolve()
-        if manifest_path in seen_manifests:
-            return
-        if not manifest_path.exists() or not manifest_path.is_file():
-            logger.warning(f"⚠️  Skipping missing manifest path: {manifest_path}")
-            return
-        if is_manifest_noise(manifest_path):
-            return
-        project_path = manifest_path.parent
-        if should_skip_directory(project_path.name, excluded_dirs):
-            return
-
-        seen_manifests.add(manifest_path)
-        discovered.append(
-            ProjectTarget(
-                project_name=manifest_project_name(manifest_path),
-                project_path=project_path,
-                manifest_path=manifest_path,
-            )
+    candidates = sorted(
+        (path for path in project_path.glob("*manifest.toml") if not is_manifest_noise(path)),
+        key=lambda path: path.name.lower(),
+    )
+    if len(candidates) == 1:
+        return candidates[0].resolve()
+    if len(candidates) > 1:
+        logger.warning(
+            f"⚠️  {project_path} has multiple manifests and no folder-named manifest; continuing without a canonical manifest"
         )
+    return None
 
-    def _walk_manifests(root: pathlib.Path):
-        for current_root, dirs, files in os.walk(root):
-            dirs[:] = [d for d in dirs if not should_skip_directory(d, excluded_dirs)]
-            for file_name in files:
-                if file_name.lower().endswith("manifest.toml"):
-                    _add_manifest(pathlib.Path(current_root) / file_name)
 
-    for root_str in root_paths:
-        root = pathlib.Path(root_str).resolve()
-        if not root.exists():
-            logger.warning(f"⚠️  Root does not exist: {root}")
+def parse_project_index(index_path: pathlib.Path, standards: Dict[str, str]) -> List[ProjectTarget]:
+    """Parse and strictly validate the authoritative Markdown project index."""
+    if not index_path.is_file():
+        raise FileNotFoundError(f"Project index not found: {index_path}")
+
+    heading_re = re.compile(r"^#{1,6}\s+(?:\d+\.\s*)?(DRS|CTS|WDS|STANDARDS)\s*$", re.IGNORECASE)
+    entry_re = re.compile(r"^-\s+(.+?)(?:\s+-\s+`([^`]+)`)?\s*$")
+    current_group = None
+    targets: List[ProjectTarget] = []
+    seen_paths = set()
+    errors = []
+
+    for line_number, raw_line in enumerate(index_path.read_text(encoding="utf-8").splitlines(), 1):
+        line = raw_line.strip()
+        heading = heading_re.match(line)
+        if heading:
+            current_group = heading.group(1).upper()
             continue
-        if not root.is_dir():
-            logger.warning(f"⚠️  Root is not a directory: {root}")
+        if not line.startswith("-"):
+            continue
+        if not current_group:
+            errors.append(f"line {line_number}: project entry appears before a recognized group heading")
+            continue
+        entry = entry_re.match(line)
+        if not entry:
+            errors.append(f"line {line_number}: malformed project entry")
             continue
 
-        _walk_manifests(root)
+        raw_path, repository_url = entry.groups()
+        project_path = pathlib.Path(raw_path.strip()).resolve()
+        normalized = normalize_path(project_path)
+        if normalized in seen_paths:
+            errors.append(f"line {line_number}: duplicate project path {project_path}")
+            continue
+        seen_paths.add(normalized)
+        if not project_path.is_dir():
+            errors.append(f"line {line_number}: project directory does not exist: {project_path}")
+            continue
 
-    for standalone in standalone_paths:
-        if standalone.is_file() and standalone.name.lower().endswith("manifest.toml"):
-            _add_manifest(standalone)
-        elif standalone.is_dir():
-            direct_manifests = sorted(
-                standalone.glob("*manifest.toml"),
-                key=lambda p: p.name.lower(),
-            )
-            if direct_manifests:
-                for manifest in direct_manifests:
-                    _add_manifest(manifest)
-            else:
-                logger.warning(f"⚠️  Standalone project has no manifest: {standalone}")
-        else:
-            logger.warning(f"⚠️  Skipping missing standalone path: {standalone}")
+        standard_path = None
+        if current_group != "STANDARDS":
+            configured_standard = standards.get(current_group)
+            if not configured_standard:
+                errors.append(f"line {line_number}: no governing standard configured for {current_group}")
+                continue
+            standard_path = pathlib.Path(configured_standard).resolve()
+            if not standard_path.is_file():
+                errors.append(f"line {line_number}: governing standard does not exist: {standard_path}")
+                continue
 
-    return sorted(discovered, key=lambda target: normalize_path(target.manifest_path))
+        manifest_path = select_canonical_manifest(project_path)
+        project_name = manifest_project_name(manifest_path) if manifest_path else project_path.name
+        targets.append(ProjectTarget(
+            project_name=project_name,
+            project_path=project_path,
+            project_group=current_group,
+            manifest_path=manifest_path,
+            repository_url=repository_url or "",
+            governing_standard_path=standard_path,
+        ))
+
+    actual_counts = {group: 0 for group in EXPECTED_GROUP_COUNTS}
+    for target in targets:
+        actual_counts[target.project_group] += 1
+    if actual_counts != EXPECTED_GROUP_COUNTS:
+        errors.append(f"expected group counts {EXPECTED_GROUP_COUNTS}, found {actual_counts}")
+    if len(targets) != 30:
+        errors.append(f"expected 30 unique projects, found {len(targets)}")
+    if errors:
+        raise ValueError("Invalid ProjectIndex.md:\n- " + "\n- ".join(errors))
+    return targets
+
+
+def discover_projects(config: Dict) -> List[ProjectTarget]:
+    """Load exactly the projects named by ProjectIndex.md."""
+    index_path = pathlib.Path(config["project"]["index_path"]).resolve()
+    return parse_project_index(index_path, config.get("standards", {}))
+
+
+def load_governing_standards(config: Dict) -> Dict[str, str]:
+    """Read each configured standard once per run."""
+    loaded = {}
+    for group, path_text in config.get("standards", {}).items():
+        path = pathlib.Path(path_text).resolve()
+        loaded[group.upper()] = path.read_text(encoding="utf-8")
+    return loaded
 
 
 def collect_snippets(project_path, max_chars, allowed_exts, excluded_dirs, manifest_path=None):
@@ -223,7 +268,9 @@ def collect_snippets(project_path, max_chars, allowed_exts, excluded_dirs, manif
             text = manifest_path.read_text(encoding="utf-8", errors="ignore")
             if text.strip():
                 rel_path = manifest_path.relative_to(project_path)
-                snippet = f"## {rel_path.as_posix()} (canonical project manifest)\n{text[:max_total_chars]}"
+                excerpt = text[:max_total_chars]
+                state = "complete file" if len(excerpt) == len(text) else f"sampled excerpt: first {len(excerpt):,} of {len(text):,} characters"
+                snippet = f"## {rel_path.as_posix()} (canonical project manifest; {state})\n{excerpt}"
                 snippets.append(snippet)
                 total_chars += len(snippet)
                 sampled_files += 1
@@ -248,7 +295,9 @@ def collect_snippets(project_path, max_chars, allowed_exts, excluded_dirs, manif
                     text = p.read_text(encoding="utf-8", errors="ignore")
                     if text.strip():
                         rel_path = p.relative_to(project_path)
-                        snippet = f"## {rel_path.as_posix()}\n{text[:max_chars]}"
+                        excerpt = text[:max_chars]
+                        state = "complete file" if len(excerpt) == len(text) else f"sampled excerpt: first {len(excerpt):,} of {len(text):,} characters"
+                        snippet = f"## {rel_path.as_posix()} ({state})\n{excerpt}"
                         candidates.append((score_file(rel_path), len(snippet), snippet))
                 except Exception as e:
                     logger.debug(f"Could not read {f}: {e}")
@@ -324,17 +373,44 @@ def validate_response(response: Dict) -> bool:
     return True
 
 
-def get_model_api_key(config: Dict) -> str | None:
-    """Resolve API key from config first, then environment variables."""
-    model_cfg = config["model"]
-    return (
-        model_cfg.get("api_key")
-        or model_cfg.get("openai_api_key")
-        or model_cfg.get("ollama_api_key")
-        or model_cfg.get("public_key")
-        or os.getenv("OLLAMA_API_KEY")
-        or os.getenv("OPENAI_API_KEY")
+def normalize_transfer_artifact_claims(response: Dict) -> Dict:
+    """Move unsupported source-truncation claims out of actionable findings."""
+    claim_re = re.compile(
+        r"\b(truncat(?:ed|ion)?|cut[ -]?off|context (?:limit|window)|transfer artifact)\b",
+        re.IGNORECASE,
     )
+    removed = []
+    for field in ("missing_pieces", "next_steps", "potential_improvements"):
+        values = response.get(field, [])
+        if not isinstance(values, list):
+            continue
+        kept = []
+        for value in values:
+            if isinstance(value, str) and claim_re.search(value):
+                removed.append(value)
+            else:
+                kept.append(value)
+        response[field] = kept
+    if removed:
+        notes = response.get("notes")
+        if not isinstance(notes, list):
+            notes = []
+        note = "Source-truncation claims were suppressed because sampled or transferred excerpts are not evidence of repository file damage."
+        if note not in notes:
+            notes.append(note)
+        response["notes"] = notes
+    return response
+
+
+def get_model_api_key(config: Dict) -> str | None:
+    """Resolve OpenAI credentials exclusively from the process environment."""
+    return os.getenv("OPENAI_API_KEY")
+
+
+def validate_runtime_config(config: Dict) -> None:
+    """Fail before scanning when required model credentials are unavailable."""
+    if config["model"].get("prefer", "auto").lower() == "openai" and not get_model_api_key(config):
+        raise RuntimeError("OPENAI_API_KEY is not set in the process environment.")
 
 
 def retry_with_backoff(func, max_retries: int = 3, *args, **kwargs):
@@ -370,7 +446,8 @@ def process_project(project, config, skip_existing: bool = True):
         target = ProjectTarget(
             project_name=project_path.name,
             project_path=project_path,
-            manifest_path=project_path / f"{project_path.name}.manifest.toml",
+            project_group="",
+            manifest_path=select_canonical_manifest(project_path),
         )
 
     name = target.project_name
@@ -387,11 +464,6 @@ def process_project(project, config, skip_existing: bool = True):
         try:
             with open(json_path, "r", encoding="utf-8") as f:
                 existing = json.load(f)
-            existing["project"] = name
-            existing["source_path"] = str(project_path.resolve())
-            existing["manifest_path"] = str(manifest_path.resolve())
-            with open(json_path, "w", encoding="utf-8") as f:
-                json.dump(existing, f, indent=2, ensure_ascii=False)
             return existing
         except Exception:
             logger.warning(f"⚠️  Could not load existing {name}, reprocessing...")
@@ -412,7 +484,13 @@ def process_project(project, config, skip_existing: bool = True):
     logger.info(f"🧠 Analyzing {name} ({file_count} files, {total_chars:,} chars)...")
 
     # Build prompt and query model with retry
-    prompt = build_project_prompt(name, text)
+    prompt = build_project_prompt(
+        name,
+        text,
+        target.project_group,
+        GOVERNING_STANDARDS.get(target.project_group, ""),
+        str(target.governing_standard_path) if target.governing_standard_path else "",
+    )
 
     try:
         result = retry_with_backoff(
@@ -427,7 +505,18 @@ def process_project(project, config, skip_existing: bool = True):
 
         result["project"] = name
         result["source_path"] = str(project_path.resolve())
-        result["manifest_path"] = str(manifest_path.resolve())
+        result["manifest_path"] = str(manifest_path.resolve()) if manifest_path else ""
+        result["project_group"] = target.project_group
+        result["governing_standard"] = str(target.governing_standard_path) if target.governing_standard_path else ""
+        result["repository_url"] = target.repository_url
+        result["sampling"] = {
+            "sampled_files": file_count,
+            "sampled_characters": total_chars,
+            "max_files": config["processing"].get("max_files_per_project", 60),
+            "max_characters": config["processing"].get("max_total_chars", 90000),
+            "content_is_sampled": True,
+        }
+        normalize_transfer_artifact_claims(result)
 
         # Validate response
         if not validate_response(result):
@@ -525,9 +614,11 @@ def write_markdown_summary(results, output_path):
 
 def main():
     # Load configuration
-    global CONFIG
+    global CONFIG, GOVERNING_STANDARDS
     config = load_config()
     CONFIG = config
+    validate_runtime_config(config)
+    GOVERNING_STANDARDS = load_governing_standards(config)
 
     out_dir = pathlib.Path(config["project"]["out_dir"])
     out_dir.mkdir(parents=True, exist_ok=True)

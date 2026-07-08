@@ -8,9 +8,10 @@ into an index, computes statistics, and writes Markdown + JSON output.
 
 import json, pathlib, statistics, shutil, time
 
-RAW = pathlib.Path("Project-Summaries/raw")
-COMPILED = pathlib.Path("Project-Summaries")
-HISTORY = pathlib.Path("Project-Summaries")
+BASE_DIR = pathlib.Path(__file__).resolve().parent
+RAW = BASE_DIR / "Project-Summaries/raw"
+COMPILED = BASE_DIR / "Project-Summaries"
+HISTORY = BASE_DIR / "Project-Summaries"
 
 for p in (RAW, COMPILED, HISTORY):
     p.mkdir(parents=True, exist_ok=True)
@@ -60,6 +61,13 @@ def write_summary(projects, avg, by_status, tags):
     lines.append("# Portfolio Summary\n")
     lines.append(f"- Total projects: {len(projects)}")
     lines.append(f"- Average completion: {avg:.1f}%")
+    group_counts = {}
+    for project in projects:
+        group = project.get("project_group", "Unclassified")
+        group_counts[group] = group_counts.get(group, 0) + 1
+    lines.append("\n## By Governance Group")
+    for group, count in sorted(group_counts.items()):
+        lines.append(f"- {group}: {count}")
     lines.append("\n## By Status")
     for k, v in by_status.items():
         lines.append(f"- {k}: {v}")
@@ -67,6 +75,9 @@ def write_summary(projects, avg, by_status, tags):
     for p in prioritize(projects)[:10]:
         lines.append(f"### {p['project']} ({p.get('percentage_complete', 0)}%)")
         lines.append(f"- Status: {p.get('status')}")
+        lines.append(f"- Governance group: {p.get('project_group', 'Unclassified')}")
+        if p.get("governing_standard"):
+            lines.append(f"- Governing standard: {p['governing_standard']}")
         nxt = p.get("next_steps", [])
         if nxt:
             lines.append(f"- Next: {nxt[0]}")

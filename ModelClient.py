@@ -46,7 +46,6 @@ def ask_model_json(model, prompt, host, api_key=None, prefer="auto"):
                     {"role": "user", "content": prompt},
                 ],
                 "response_format": {"type": "json_object"},
-                "temperature": 0,
             },
             headers={**headers, "Content-Type": "application/json"},
             timeout=180,

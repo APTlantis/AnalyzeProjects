@@ -12,8 +12,8 @@ title = "AnalyzeProjects"
 kind = "project"
 class = "project"
 status = "active"
-description = "Project-analysis tooling with a generated or interactive dashboard surface."
-tags = []
+description = "Index-driven project analysis with group-specific governance standards and structured dashboard output."
+tags = ["python", "cli", "portfolio-analysis", "openai", "governance"]
 
 [project]
 type = "command-tool"
@@ -54,7 +54,7 @@ child_projects = []
 stability = "experimental"
 active_development = true
 known_gaps = [
-    "Current build, test, artifact, and release posture were not executed during the governance migration.",
+    "A paid full-portfolio API evaluation is intentionally not part of local verification.",
 ]
 
 [migration]
@@ -85,10 +85,10 @@ required_child_project_files = [
 ]
 
 [verification]
-level = "metadata-reconciled"
-evidence = "README.md and implementation"
+level = "implementation-tested"
+evidence = "Index discovery, prompt governance, response normalization, and mocked model-client tests"
 reviewed = "2026-07-08"
 build_verified = false
-tests_verified = false
+tests_verified = true
 artifact_verified = false
 release_verified = false

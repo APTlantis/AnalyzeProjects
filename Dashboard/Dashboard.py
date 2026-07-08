@@ -9,13 +9,13 @@ from flask import Flask, render_template_string
 import json, pathlib
 
 app = Flask(__name__)
+INDEX_PATH = pathlib.Path(__file__).resolve().parent / "Project-Summaries/index.json"
 
 @app.route("/")
 def index():
-    index_path = pathlib.Path("project_summaries-less-old/compiled/index.json")
-    if not index_path.exists():
-        return "<h3>No index.json found. Run portfolio_analyzer.py first.</h3>"
-    data = json.loads(index_path.read_text(encoding="utf-8"))
+    if not INDEX_PATH.exists():
+        return "<h3>No index.json found. Run PortfolioAnalyzer.py first.</h3>"
+    data = json.loads(INDEX_PATH.read_text(encoding="utf-8"))
     projects = sorted(data["projects"], key=lambda p: p.get("percentage_complete", 0))
     avg = round(data["average_completion"], 1)
     project_count = len(projects)
@@ -42,8 +42,10 @@ def index():
       {% for p in projects %}
         <div class="project">
           <b>{{p['project']}}</b> — {{p.get('status','?')}} ({{p.get('percentage_complete',0)}}%)
+          <span class="group">[{{p.get('project_group','Unclassified')}}]</span>
           <div class="bar" style="width:{{p.get('percentage_complete',0)}}%;"></div>
           <div class="next">Next: {{p.get('next_steps',[None])[0] or 'n/a'}}</div>
+          {% if p.get('governing_standard') %}<div class="standard">Standard: {{p.get('governing_standard')}}</div>{% endif %}
           <div class="tags">{{", ".join(p.get('tags', [])[:8])}}</div>
         </div>
       {% endfor %}

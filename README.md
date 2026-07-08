@@ -1,122 +1,78 @@
-# Project Summarizer Agent
+# AnalyzeProjects
 
-AI-powered tool to automatically assess and summarize multiple coding projects using Ollama-hosted models.
+AnalyzeProjects evaluates a controlled portfolio of local projects with OpenAI and produces per-project JSON plus a compiled Markdown summary. `ProjectIndex.md` is the sole inclusion authority: the analyzer does not discover extra projects from drive roots.
 
-## What's New
+## Current evaluation inventory
 
-### Fixed Issues
-- **Schema alignment** - Template now matches markdown output (added status, complexity, tags fields)
-- **Config loading** - Now properly loads from `config.toml` instead of hardcoded values
-- **Field type fix** - Changed `percentage_complete` from array to integer (0-100)
+The checked-in index contains exactly 30 projects:
 
-### Enhancements
-1. **TOML Configuration** - Externalized all settings to `config.toml`
-2. **Directory Exclusions** - Automatically skips `.git`, `node_modules`, `venv`, etc.
-3. **Retry Logic** - Exponential backoff (1s, 2s, 4s) for failed API calls
-4. **Incremental Processing** - Skips projects processed within 7 days
-5. **Context Warnings** - Alerts when project files exceed safe token limits
-6. **Better Logging** - Structured logging with timestamps and levels
-7. **Progress Tracking** - Shows "Processing 5/23 projects..."
-8. **JSON Validation** - Verifies model responses match expected schema
-9. **Summary Statistics** - Average completion, status/complexity distributions
-10. **Concurrent Processing** - Processes 3 projects in parallel (configurable)
+| Group | Count | Evaluation basis |
+| --- | ---: | --- |
+| DRS | 12 | Desktop Application Release Standard |
+| CTS | 6 | Command Tool Standard |
+| WDS | 4 | Website Development Standard |
+| Standards | 8 | Internal clarity, completeness, consistency, and implementability |
 
-## Installation
+`QB-Winget` is evaluated as DRS. `Llama` is intentionally not in the evaluation index. The eight standards are read from `D:\.library\aptlantis_core`, not the historical `.city_hall` tree.
 
-```bash
-# For Python 3.11+
-pip install requests
+## How evaluation works
 
-# For Python <3.11, also install:
-pip install tomli
+1. Parse and validate `ProjectIndex.md`.
+2. Require 30 unique, existing project directories with the exact 12/6/4/8 group distribution.
+3. Select `<folder>.manifest.toml` when present. A single alternative direct manifest is accepted; a manifest is optional.
+4. Read each DRS, CTS, and WDS governing standard once.
+5. Sample high-value files within the configured file and character budgets.
+6. Send the project evidence and its group-specific governance context to `gpt-5-mini-2025-08-07`.
+7. Validate and normalize the JSON response, write individual results, then compile the summary.
+
+Standards projects use a separate rubric. Application release requirements are not automatically imposed on governance documents.
+
+## Sampling and truncation safety
+
+Every transferred file block is labeled either `complete file` or `sampled excerpt`, including the exact excerpt size when shortened. An excerpt ending is a context-transfer boundary, not evidence of a damaged repository file. The prompt prohibits treating that boundary as a defect, and post-processing removes transfer-related truncation claims from actionable findings.
+
+Each result records:
+
+- `project_group`
+- `governing_standard`
+- `repository_url`
+- `manifest_path` when available
+- `sampling.sampled_files`, sampled characters, and configured limits
+
+The original assessment fields remain compatible with existing dashboard consumers.
+
+## Configuration and credentials
+
+Copy `config.example.toml` to the ignored local `config.toml` when bootstrapping a checkout. Set the OpenAI key in the process environment; credentials are not read from configuration files:
+
+```powershell
+$env:OPENAI_API_KEY = [Environment]::GetEnvironmentVariable("OPENAI_API_KEY", "Machine")
 ```
 
-## Security
+The analyzer fails before scanning when the key is unavailable. If a credential was previously stored in `config.toml`, rotate it through the OpenAI dashboard.
 
-**Important:** If you're using an API key for cloud-hosted models:
+## Run
 
-1. **Never commit** `config.toml` to version control if it contains your API key
-2. Add `config.toml` to your `.gitignore`
-3. Consider using environment variables instead:
-   - Set `OLLAMA_API_KEY` environment variable
-   - Remove `api_key` from config.toml
-   - The code will check environment variables as a fallback
+From `D:\CTS\AnalyzeProjects`:
 
-## Configuration
-
-Edit `config.toml`:
-
-```toml
-[project]
-root = "D:/Projects"              # Legacy single-root option
-roots = ["D:/Projects"]           # Preferred: evaluate each top-level child directory under these roots
-expand_children_of = ["D:/Projects/utilities"]  # Treat each child folder here as its own project
-standalone_projects = [           # Explicit project roots outside the main roots
-  "C:/Users/You/Desktop/Tool & Data Tracking",
-  "C:/Users/You/Desktop/Aptlantis-Studio",
-]
-out_dir = "D:/Projects/project_summaries"
-
-[model]
-name = "minimax-m2:cloud"         # Ollama model name
-ollama_host = "http://127.0.0.1:11434"
-ollama_api_key = "your-api-key-here"  # Optional: for cloud-hosted models
-
-[processing]
-max_chars_per_file = 2500         # Truncate long files
-max_total_chars = 90000           # Hard cap for total prompt context per project
-max_files_per_project = 60        # Max number of files sampled per project
-delay = 0.3                       # Delay between API calls (seconds)
-max_retries = 3                   # Retry failed requests
-skip_already_processed = true     # Skip recently processed projects
-max_workers = 3                   # Concurrent processing threads
-
-[filtering]
-allowed_exts = [".py", ".md", ...]  # File types to analyze
-excluded_dirs = [".git", "node_modules", ...]  # Directories to skip
-```
-
-## Usage
-
-```bash
+```powershell
 python Summarizer.py
 ```
 
-Output:
-- Individual JSON files: `project_summaries/{project_name}.json`
-- Combined markdown: `project_summaries/summary.md`
+The configured output remains under the existing dashboard summary location. Recent result files may be reused when `skip_already_processed` is enabled.
 
-## Schema
+## Verification
 
-Each project is assessed with:
+The test suite uses temporary directories and mocked HTTP requests; it does not make paid API calls:
 
-```json
-{
-  "project": "MyProject",
-  "source_path": "D:/Projects/MyProject",
-  "summary": "Brief description...",
-  "status": "In Progress",
-  "percentage_complete": 75,
-  "missing_pieces": ["Unit tests", "Documentation"],
-  "next_steps": ["Add error handling", "Deploy to prod"],
-  "potential_improvements": ["Add caching", "Optimize queries"],
-  "complexity": "Medium",
-  "tags": ["python", "web", "automation"]
-}
+```powershell
+python -m unittest discover -s tests -v
 ```
 
-## Features
+To inspect the index without invoking the model:
 
-- **Smart Filtering** - Skips binary files, build artifacts, dependencies
-- **Budgeted Context** - Caps total chars and sampled files so very large repos do not blow up the model request
-- **Flexible Discovery** - Supports multiple roots, explicit standalone projects, and expanded child-project folders
-- **Incremental Updates** - Only reprocesses changed/new projects
-- **Fault Tolerant** - Continues processing even if individual projects fail
-- **Rich Output** - Markdown summary sorted by completion percentage
-- **Statistics Dashboard** - Overview of all projects at a glance
+```powershell
+python -c "import Summarizer; c=Summarizer.load_config('config.toml'); print([(t.project_group, t.project_name) for t in Summarizer.discover_projects(c)])"
+```
 
-## Performance
-
-- Processes 20 small projects in ~2-3 minutes (with 3 workers)
-- Uses ~100-500 tokens per project depending on size
-- Automatic caching reduces re-analysis of unchanged projects
+Malformed entries, duplicate paths, missing directories, missing standards, and incorrect group totals are fatal rather than silently skipped.
