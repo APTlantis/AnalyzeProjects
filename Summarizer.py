@@ -51,9 +51,9 @@ CONFIG: Dict = {}
 GOVERNING_STANDARDS: Dict[str, str] = {}
 
 EXPECTED_GROUP_COUNTS = {
-    "DRS": 12,
-    "CTS": 6,
-    "WDS": 4,
+    "DRS": 14,
+    "CTS": 9,
+    "WDS": 2,
     "STANDARDS": 8,
 }
 
@@ -224,10 +224,13 @@ def parse_project_index(index_path: pathlib.Path, standards: Dict[str, str]) -> 
     actual_counts = {group: 0 for group in EXPECTED_GROUP_COUNTS}
     for target in targets:
         actual_counts[target.project_group] += 1
+
+    expected_total = sum(EXPECTED_GROUP_COUNTS.values())
+
     if actual_counts != EXPECTED_GROUP_COUNTS:
         errors.append(f"expected group counts {EXPECTED_GROUP_COUNTS}, found {actual_counts}")
-    if len(targets) != 30:
-        errors.append(f"expected 30 unique projects, found {len(targets)}")
+    if len(targets) != expected_total:
+        errors.append(f"expected {expected_total} unique projects, found {len(targets)}")
     if errors:
         raise ValueError("Invalid ProjectIndex.md:\n- " + "\n- ".join(errors))
     return targets

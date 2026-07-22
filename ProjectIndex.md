@@ -4,42 +4,45 @@ This file is the sole inclusion authority for portfolio evaluation. Each listed 
 
 ## 1. DRS
 
-- D:\DRS\ChromeArchivalPlugin - `git@github.com:APTlantis/ChromePlugin.git`
-- D:\DRS\ClipboardFilter - `git@github.com:APTlantis/ClipboardFilter.git`
-- D:\DRS\CommandWizard - `https://github.com/APTlantis/CommandWizard`
-- D:\DRS\FileCabinet - `https://github.com/APTlantis/FileCabinet`
 - D:\DRS\AptDiskwright - `https://github.com/APTlantis/Partitioning`
-- D:\DRS\Structra - `https://github.com/APTlantis/Structra`
-- D:\DRS\WSL - `https://github.com/APTlantis/WSL-Distro-Creation`
 - D:\DRS\AptlantisConsole - `https://github.com/APTlantis/AptlantisConsole`
 - D:\DRS\Chat - `https://github.com/APTlantis/ChatArchive`
-- D:\DRS\Tauri-IT - `git@github.com:APTlantis/Tauri-IT.git`
+- D:\DRS\ChromeArchivalPlugin - `git@github.com:APTlantis/ChromePlugin.git`
+- D:\DRS\ClipboardFilter - `git@github.com:APTlantis/ClipboardFilter.git`
+- D:\DRS\CodeNote
+- D:\DRS\CommandWizard - `https://github.com/APTlantis/CommandWizard`
+- D:\DRS\FileCabinet - `https://github.com/APTlantis/FileCabinet`
+- D:\DRS\PackagerPlugin
+- D:\DRS\QB-Winget - `https://github.com/APTlantis/WingettingQB64`
+- D:\DRS\Structra - `https://github.com/APTlantis/Structra`
+- D:\DRS\WingettingQB64 - `https://github.com/APTlantis/WingettingQB64`
 - D:\DRS\WinTrim - `git@github.com:APTlantis/WinTrim.git`
-- D:\BASIC\QB-Winget - `https://github.com/APTlantis/WingettingQB64`
+- D:\DRS\WSL - `https://github.com/APTlantis/WSL-Distro-Creation`
 
 ## 2. CTS
 
+- D:\CTS\ScriptWriters - `https://github.com/APTlantis/ScriptWriters`
 - D:\CTS\AnalyzeProjects - `https://github.com/APTlantis/AnalyzeProjects`
 - D:\CTS\AptlantisLogos - `git@github.com:APTlantis/AptLogos.git`
 - D:\CTS\ArchiveHasher - `https://github.com/APTlantis/Archive-Hasher`
 - D:\CTS\CloneCratesio - `https://github.com/APTlantis/Clone-Cratesio`
+- D:\CTS\ConversionTools
 - D:\CTS\FH-RefToolkit - `https://github.com/APTlantis/Flathub-Refs-Toolkit`
+- D:\CTS\HolyC-Llama - `https://github.com/APTlantis/HolyC-Llama`
 - D:\CTS\LangThemeGenerator - `git@github.com:APTlantis/LangThemeGenerator.git`
 
 ## 3. WDS
 
-- D:\WDS\aptlantis_net - `ssh://git@codeberg.org/Aptlantis/Aptlantis.git`
-- D:\WDS\aptlantis_studio - `https://github.com/APTlantis/AptlantisStudio`
-- D:\WDS\linux-genealogy - `git@github.com:37RaptorRed/LinuxGenealogy.git`
-- D:\WDS\aptlantis
+- B:\aptlantis.studio - `https://github.com/APTlantis/AptlantisStudio`
+- B:\aptlantis.net - `ssh://git@codeberg.org/Aptlantis/Aptlantis.git`
 
 ## 4. STANDARDS
 
-- D:\.library\aptlantis_core\NeonInk
+- D:\.library\aptlantis_core\AAMHS
+- D:\.library\aptlantis_core\blue.slate
+- D:\.library\aptlantis_core\CTS
+- D:\.library\aptlantis_core\DRS
 - D:\.library\aptlantis_core\PPS
 - D:\.library\aptlantis_core\SESM
 - D:\.library\aptlantis_core\WDS
 - D:\.library\aptlantis_core\WGS
-- D:\.library\aptlantis_core\AAMHS
-- D:\.library\aptlantis_core\CTS
-- D:\.library\aptlantis_core\DRS

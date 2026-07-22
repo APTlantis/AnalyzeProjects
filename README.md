@@ -4,21 +4,21 @@ AnalyzeProjects evaluates a controlled portfolio of local projects with OpenAI a
 
 ## Current evaluation inventory
 
-The checked-in index contains exactly 30 projects:
+The checked-in index contains exactly 33 projects:
 
 | Group | Count | Evaluation basis |
 | --- | ---: | --- |
-| DRS | 12 | Desktop Application Release Standard |
-| CTS | 6 | Command Tool Standard |
-| WDS | 4 | Website Development Standard |
+| DRS | 14 | Desktop Application Release Standard |
+| CTS | 9 | Command Tool Standard |
+| WDS | 2 | Website Development Standard |
 | Standards | 8 | Internal clarity, completeness, consistency, and implementability |
 
-`QB-Winget` is evaluated as DRS. `Llama` is intentionally not in the evaluation index. The eight standards are read from `D:\.library\aptlantis_core`, not the historical `.city_hall` tree.
+`QB-Winget` and `WingettingQB64` are evaluated as DRS. `HolyC-Llama`, `ConversionTools`, and `ScriptWriters` are included in the CTS evaluation inventory. `AptlantisLogos` is evaluated as CTS because it is a whole-drive support/standardization project, not a WDS website project. The eight standards are read from `D:\.library\aptlantis_core`, not the historical `.city_hall` tree, and exclude `D:\.library\aptlantis_core\Blanks`.
 
 ## How evaluation works
 
 1. Parse and validate `ProjectIndex.md`.
-2. Require 30 unique, existing project directories with the exact 12/6/4/8 group distribution.
+2. Require 33 unique, existing project directories with the exact 14/9/2/8 group distribution.
 3. Select `<folder>.manifest.toml` when present. A single alternative direct manifest is accepted; a manifest is optional.
 4. Read each DRS, CTS, and WDS governing standard once.
 5. Sample high-value files within the configured file and character budgets.

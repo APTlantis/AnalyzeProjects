@@ -21,10 +21,16 @@ class ProjectIndexTests(unittest.TestCase):
         counts = {group: 0 for group in Summarizer.EXPECTED_GROUP_COUNTS}
         for target in targets:
             counts[target.project_group] += 1
-        self.assertEqual(30, len(targets))
+        self.assertEqual(33, len(targets))
         self.assertEqual(Summarizer.EXPECTED_GROUP_COUNTS, counts)
         self.assertIn("QB-Winget", {target.project_name for target in targets})
-        self.assertNotIn("Llama", {target.project_name for target in targets})
+        self.assertIn("WingettingQB64", {target.project_name for target in targets})
+        self.assertIn("ConversionTools", {target.project_name for target in targets})
+        normalized_paths = {Summarizer.normalize_path(target.project_path) for target in targets}
+        self.assertIn("d:/cts/holyc-llama", normalized_paths)
+        self.assertNotIn("d:/cts/llama", normalized_paths)
+        self.assertNotIn("Tauri-IT", {target.project_name for target in targets})
+        self.assertNotIn("LinuxGenealogy", {target.project_name for target in targets})
         standards = [target for target in targets if target.project_group == "STANDARDS"]
         self.assertTrue(all(".library\\aptlantis_core" in str(target.project_path) for target in standards))
 

@@ -3,7 +3,7 @@ schema = "APTlantis Entity Manifest"
 schema_version = "2.4"
 manifest_type = "project"
 canonical_name = "AnalyzeProjects.manifest.toml"
-last_updated = "2026-07-08"
+last_updated = "2026-07-22"
 maintainer = "Herb"
 
 [entity]
@@ -36,7 +36,7 @@ inherits_from = "..\\CTS.manifest.toml"
 
 [lifecycle]
 state = "active"
-last_reviewed = "2026-07-08"
+last_reviewed = "2026-07-22"
 maintainer = "Herb"
 
 [paths]
@@ -86,8 +86,8 @@ required_child_project_files = [
 
 [verification]
 level = "implementation-tested"
-evidence = "Index discovery, prompt governance, response normalization, and mocked model-client tests"
-reviewed = "2026-07-08"
+evidence = "33-target index discovery, prompt governance, response normalization, and mocked model-client tests"
+reviewed = "2026-07-22"
 build_verified = false
 tests_verified = true
 artifact_verified = false
