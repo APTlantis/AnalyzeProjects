@@ -36,7 +36,17 @@ def build_project_prompt(name, text, project_group="", governing_standard="", go
             "EVALUATION MODE: GOVERNANCE STANDARD\n"
             "Evaluate this standard for internal clarity, completeness, consistency, implementability, "
             "scope boundaries, terminology, required evidence, and actionable verification rules. "
-            "Do not apply DRS, CTS, or WDS application-release requirements unless this standard explicitly incorporates them.\n\n"
+            "Do not apply DRS, CTS, or WDS application-release requirements unless this standard explicitly incorporates them.\n"
+            "Score governance standards by the quality of their intent boundary, artifact suite, examples, schemas, "
+            "adoption guidance, verification guidance, and relationship to other Aptlantis standards.\n"
+            "For standards, missing_pieces must be limited to unresolved contradictions, absent promised artifacts, "
+            "broken current capabilities, or artifacts the manifest/docs explicitly claim but do not provide.\n"
+            "An empty validators list is only an optional maturity gap unless the standard claims executable validation. "
+            "If a validator is registered, such as DRS registering drs.ps1, do not report missing validation tooling.\n"
+            "Put future validator ideas, stricter schemas, examples, compatibility notes, CI snippets, or automation helpers "
+            "in next_steps or potential_improvements; do not frame them as blockers unless the standard itself says they block use.\n"
+            "Avoid generic public-product polish, release, packaging, CI, broad onboarding, or distribution feedback for standards "
+            "unless those requirements are in the standard's own declared scope.\n\n"
         )
     else:
         governance_context = (
