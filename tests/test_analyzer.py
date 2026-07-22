@@ -106,6 +106,23 @@ class ModelClientTests(unittest.TestCase):
             with self.assertRaisesRegex(requests.HTTPError, "401"):
                 ModelClient.ask_model_json("model", "prompt", "https://api.openai.com", "bad-key", "openai")
 
+    def test_openai_credential_preflight_checks_model_access(self):
+        response = mock.Mock()
+        response.status_code = 200
+        response.raise_for_status.return_value = None
+        with mock.patch("ModelClient.requests.get", return_value=response) as get:
+            self.assertTrue(ModelClient.check_openai_credentials("https://api.openai.com", "key", "model"))
+        self.assertEqual("https://api.openai.com/v1/models/model", get.call_args.args[0])
+        self.assertEqual("Bearer key", get.call_args.kwargs["headers"]["Authorization"])
+
+    def test_openai_credential_preflight_rejects_auth_failure(self):
+        response = mock.Mock()
+        response.status_code = 401
+        response.raise_for_status.side_effect = requests.HTTPError("401 unauthorized")
+        with mock.patch("ModelClient.requests.get", return_value=response):
+            with self.assertRaisesRegex(requests.HTTPError, "401"):
+                ModelClient.check_openai_credentials("https://api.openai.com", "bad-key", "model")
+
     def test_retry_covers_rate_limit(self):
         failure = requests.HTTPError("429 rate limit")
         operation = mock.Mock(side_effect=[failure, {"ok": True}])
@@ -113,6 +130,15 @@ class ModelClientTests(unittest.TestCase):
             result = Summarizer.retry_with_backoff(operation, 2)
         self.assertEqual({"ok": True}, result)
         self.assertEqual(2, operation.call_count)
+
+    def test_retry_stops_on_authentication_error(self):
+        failure = requests.HTTPError("401 unauthorized")
+        operation = mock.Mock(side_effect=failure)
+        with mock.patch("Summarizer.time.sleep") as sleep:
+            with self.assertRaises(Summarizer.FatalModelAuthenticationError):
+                Summarizer.retry_with_backoff(operation, 3)
+        self.assertEqual(1, operation.call_count)
+        sleep.assert_not_called()
 
     def test_environment_key_is_required(self):
         config = {"model": {"prefer": "openai"}}

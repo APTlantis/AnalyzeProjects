@@ -27,7 +27,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-from ModelClient import ask_model_json
+from ModelClient import ask_model_json, check_openai_credentials
 from PromptTemplate import build_project_prompt, PROJECT_TEMPLATE
 
 # --- Config Loading ---
@@ -56,6 +56,10 @@ EXPECTED_GROUP_COUNTS = {
     "WDS": 2,
     "STANDARDS": 8,
 }
+
+
+class FatalModelAuthenticationError(RuntimeError):
+    """Raised when model credentials are present but rejected by the provider."""
 
 
 @dataclass(frozen=True)
@@ -416,12 +420,55 @@ def validate_runtime_config(config: Dict) -> None:
         raise RuntimeError("OPENAI_API_KEY is not set in the process environment.")
 
 
+def preflight_model_provider(config: Dict) -> None:
+    """Verify model credentials and model access before project work begins."""
+    model_config = config["model"]
+    prefer = model_config.get("prefer", "auto").lower()
+    host = model_config.get("api_host", "")
+    if prefer != "openai":
+        return
+
+    logger.info("🔐 Checking OpenAI credentials before scanning projects...")
+    try:
+        check_openai_credentials(host, get_model_api_key(config), model_config.get("name"))
+    except RuntimeError:
+        raise
+    except Exception as e:
+        if is_authentication_error(e):
+            raise FatalModelAuthenticationError(
+                "OpenAI rejected OPENAI_API_KEY during preflight. "
+                "Update the key in this PowerShell session before rerunning."
+            ) from e
+        raise
+
+
+def is_authentication_error(error: Exception) -> bool:
+    """Identify provider authentication/authorization failures that should never be retried."""
+    response = getattr(error, "response", None)
+    status_code = getattr(response, "status_code", None)
+    if status_code in (401, 403):
+        return True
+
+    message = str(error).lower()
+    return (
+        "401" in message
+        or "403" in message
+        or "unauthorized" in message
+        or "forbidden" in message
+    )
+
+
 def retry_with_backoff(func, max_retries: int = 3, *args, **kwargs):
     """Retry a function with exponential backoff."""
     for attempt in range(max_retries):
         try:
             return func(*args, **kwargs)
         except Exception as e:
+            if is_authentication_error(e):
+                raise FatalModelAuthenticationError(
+                    "Model provider rejected the configured credentials. "
+                    "Check OPENAI_API_KEY before rerunning."
+                ) from e
             if attempt == max_retries - 1:
                 raise
             wait_time = 2 ** attempt
@@ -535,6 +582,8 @@ def process_project(project, config, skip_existing: bool = True):
 
         return result
 
+    except FatalModelAuthenticationError:
+        raise
     except Exception as e:
         logger.error(f"❌ Error on {name}: {e}")
         return None
@@ -621,6 +670,20 @@ def main():
     config = load_config()
     CONFIG = config
     validate_runtime_config(config)
+
+    # Log model preference/host for clarity
+    model_pref = config["model"].get("prefer", "auto")
+    model_host = config["model"].get("api_host")
+    logger.info(f"🤖 Model: {config['model']['name']} | Host: {model_host} | Prefer: {model_pref}")
+    try:
+        preflight_model_provider(config)
+    except FatalModelAuthenticationError as e:
+        logger.error(f"❌ {e}")
+        raise SystemExit(1) from e
+    except RuntimeError as e:
+        logger.error(f"❌ {e}")
+        raise SystemExit(1) from e
+
     GOVERNING_STANDARDS = load_governing_standards(config)
 
     out_dir = pathlib.Path(config["project"]["out_dir"])
@@ -631,11 +694,6 @@ def main():
     total_projects = len(project_targets)
 
     logger.info(f"🔍 Found {total_projects} project manifests to evaluate")
-
-    # Log model preference/host for clarity
-    model_pref = config["model"].get("prefer", "auto")
-    model_host = config["model"].get("api_host")
-    logger.info(f"🤖 Model: {config['model']['name']} | Host: {model_host} | Prefer: {model_pref}")
 
     results = []
     max_workers = config["processing"].get("max_workers", 3)
@@ -662,6 +720,12 @@ def main():
                     logger.info(f"✅ [{completed}/{total_projects}] Completed {target.project_name}")
                 else:
                     logger.info(f"⚪ [{completed}/{total_projects}] Skipped {target.project_name}")
+            except FatalModelAuthenticationError as e:
+                logger.error(f"❌ Authentication failed while processing {target.project_name}: {e}")
+                for pending in future_to_project:
+                    if pending is not future:
+                        pending.cancel()
+                raise SystemExit(1) from e
             except Exception as e:
                 logger.error(f"❌ [{completed}/{total_projects}] Failed {target.project_name}: {e}")
 

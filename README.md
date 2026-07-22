@@ -50,6 +50,7 @@ $env:OPENAI_API_KEY = [Environment]::GetEnvironmentVariable("OPENAI_API_KEY", "M
 ```
 
 The analyzer fails before scanning when the key is unavailable. If a credential was previously stored in `config.toml`, rotate it through the OpenAI dashboard.
+If OpenAI rejects the configured key with `401` or `403`, the run stops immediately instead of retrying every project.
 
 ## Run
 

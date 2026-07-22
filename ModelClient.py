@@ -1,5 +1,24 @@
 import requests, json
 
+
+def check_openai_credentials(host, api_key, model=None):
+    """Verify OpenAI credentials before starting an expensive portfolio scan."""
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not set in the process environment.")
+
+    endpoint = f"{host}/v1/models/{model}" if model else f"{host}/v1/models"
+    response = requests.get(
+        endpoint,
+        headers={"Authorization": f"Bearer {api_key}"},
+        timeout=30,
+    )
+    if response.status_code in (401, 403):
+        response.raise_for_status()
+    if response.status_code == 404 and model:
+        raise RuntimeError(f"Model is not available to the configured key: {model}")
+    response.raise_for_status()
+    return True
+
 def ask_model_json(model, prompt, host, api_key=None, prefer="auto"):
     """
     Send a JSON-structured summarization prompt.
